@@ -5,8 +5,13 @@ import process.QueueForTransactions;
 import process.MultiActor;
 import stat.DiscretHisto;
 import stat.Histo;
+import stat.IHisto;
+import widgets.stat.IStatisticsable;
 
-public class Model {
+import java.util.LinkedHashMap; // ЗМІНЕНО: Імпортуємо LinkedHashMap
+import java.util.Map;
+
+public class Model implements IStatisticsable {
     private Dispatcher dispatcher;
     private RGRStage1Frame gui;
 
@@ -41,9 +46,7 @@ public class Model {
     }
 
     public void initForTest() {
-        // ПРИВ'ЯЗУЄМО НОВИЙ ЗЕЛЕНИЙ ГРАФІК ДО ГЕНЕРАТОРА
         getGenerator().setPainter(gui.getDiagramArrivals().getPainter());
-        
         getQueueCheck().setPainter(gui.getDiagramCheckQueue().getPainter());
         getQueueTune().setPainter(gui.getDiagramTuneQueue().getPainter());
 
@@ -51,6 +54,25 @@ public class Model {
             dispatcher.setProtocolFileName("Console");
         else
             dispatcher.setProtocolFileName("");
+    }
+
+    // РЕАЛІЗАЦІЯ ІНТЕРФЕЙСУ IStatisticsable
+    @Override
+    public void initForStatistics() {
+        // Відключаємо протокол для швидкодії при зборі статистики
+        dispatcher.setProtocolFileName("");
+    }
+
+    @Override
+    public Map<String, IHisto> getStatistics() {
+        // ЗМІНЕНО: Використовуємо LinkedHashMap для збереження порядку 1, 2, 3, 4, 5
+        Map<String, IHisto> stats = new LinkedHashMap<>();
+        stats.put("1. Довжина черги на контроль", discretHistoCheckQueue);
+        stats.put("2. Довжина черги на налаштування", discretHistoTuneQueue);
+        stats.put("3. Час перебування ТВ в системі", histoServiceTime);
+        stats.put("4. Час простою тестувальника", histoWaitCheck);
+        stats.put("5. Час простою майстра", histoWaitTune);
+        return stats;
     }
 
     public GeneratorTV getGenerator() {
@@ -73,6 +95,7 @@ public class Model {
             deviceCheck.setRnd(gui.getRndCheck().getRandom());
             deviceCheck.setProbDefect(gui.getProbDefect().getDouble());
             deviceCheck.setFinishTime(gui.getTimeSetting().getDouble());
+            deviceCheck.setHistoForActorWaitingTime(histoWaitCheck); // Збір статистики простою
         }
         return deviceCheck;
     }
@@ -95,6 +118,7 @@ public class Model {
             deviceTune.setQueueCheck(getQueueCheck());
             deviceTune.setRnd(gui.getRndTune().getRandom());
             deviceTune.setFinishTime(gui.getTimeSetting().getDouble());
+            deviceTune.setHistoForActorWaitingTime(histoWaitTune); // Збір статистики простою
         }
         return deviceTune;
     }
@@ -116,6 +140,7 @@ public class Model {
     public TransactionTV createTransaction() {
         TransactionTV tv = new TransactionTV();
         tv.setQueueCheck(getQueueCheck());
+        tv.setHistoServiceTime(histoServiceTime); // Передаємо гістограму транзакції
         return tv;
     }
 }

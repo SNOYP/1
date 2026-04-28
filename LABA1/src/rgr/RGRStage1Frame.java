@@ -9,14 +9,14 @@ import java.awt.event.ComponentEvent;
 
 import process.Dispatcher;
 import process.IModelFactory;
-import rnd.*; // Імпорт для встановлення значень генераторів за замовчуванням
+import rnd.*;
 import widgets.ChooseData;
 import widgets.ChooseRandom;
 import widgets.Diagram;
+import widgets.stat.StatisticsManager; // Імпорт менеджера статистики
 
 public class RGRStage1Frame extends JFrame {
     
-    // --- Елементи налаштування моделі ---
     private ChooseRandom rndArrival;
     private ChooseRandom rndCheck;
     private ChooseRandom rndTune;
@@ -24,17 +24,19 @@ public class RGRStage1Frame extends JFrame {
     private ChooseData probDefect;
     private ChooseData timeSetting;
     
-    // --- Елементи вкладки Test ---
     private JPanel panelTest;
-    private Diagram diagramArrivals; // 3-й графік (Надходження)
+    private Diagram diagramArrivals;
     private Diagram diagramCheckQueue;
     private Diagram diagramTuneQueue;
     private JCheckBox cbProtocolToConsole;
     private JButton btnStart;
+    
+    // Менеджер статистики
+    private StatisticsManager statManager;
 
     public RGRStage1Frame() {
         setTitle("РГР: Дослідження роботи ВТК (TestTV) | Варіант 14");
-        setSize(1050, 750); // Збільшена висота для 3-х графіків
+        setSize(1050, 750);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -43,7 +45,7 @@ public class RGRStage1Frame extends JFrame {
         setContentPane(mainPanel);
 
         // ==========================================
-        // 1. ПАНЕЛЬ НАЛАШТУВАНЬ (ЛІВОРУЧ)
+        // 1. ПАНЕЛЬ НАЛАШТУВАНЬ
         // ==========================================
         JPanel settingsPanel = new JPanel();
         settingsPanel.setLayout(new BoxLayout(settingsPanel, BoxLayout.Y_AXIS));
@@ -54,15 +56,15 @@ public class RGRStage1Frame extends JFrame {
         settingsPanel.setPreferredSize(new Dimension(320, 0));
 
         rndArrival = new ChooseRandom();
-        rndArrival.setRandom(new Negexp(5.0)); // Автоматичне заповнення: Експоненціальний
+        rndArrival.setRandom(new Negexp(5.0)); 
         JPanel pArrival = createWrapperPanel("Інтервал надходження нових ТВ", rndArrival);
 
         rndCheck = new ChooseRandom();
-        rndCheck.setRandom(new Norm(3.0, 0.5)); // Автоматичне заповнення: Нормальний
+        rndCheck.setRandom(new Norm(3.0, 0.5)); 
         JPanel pCheck = createWrapperPanel("Час перевірки на пункті контролю", rndCheck);
 
         rndTune = new ChooseRandom();
-        rndTune.setRandom(new Uniform(5.0, 12.0)); // Автоматичне заповнення: Рівномірний
+        rndTune.setRandom(new Uniform(5.0, 12.0));
         JPanel pTune = createWrapperPanel("Час налаштування бракованого ТВ", rndTune);
 
         countTesters = new ChooseData();
@@ -94,19 +96,17 @@ public class RGRStage1Frame extends JFrame {
         mainPanel.add(settingsPanel, BorderLayout.WEST);
 
         // ==========================================
-        // 2. ПАНЕЛЬ ВКЛАДОК (ПРАВОРУЧ)
+        // 2. ПАНЕЛЬ ВКЛАДОК
         // ==========================================
         UIManager.put("TabbedPane.font", new Font("Monospaced", Font.BOLD, 14));
         JTabbedPane tabs = new JTabbedPane();
 
-        // --- Вкладка "Test" (Динамічна індикація) ---
+        // --- Вкладка "Test" ---
         panelTest = new JPanel(new BorderLayout(10, 10));
         panelTest.setBorder(new EmptyBorder(10, 10, 10, 10));
         
-        // 3 рядки для графіків
         JPanel diagramsPanel = new JPanel(new GridLayout(3, 1, 0, 10));
         
-        // 1. Графік надходження (Зелений)
         diagramArrivals = new Diagram();
         diagramArrivals.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.GRAY), 
@@ -115,7 +115,6 @@ public class RGRStage1Frame extends JFrame {
         diagramArrivals.setVerticalMaxText("300"); 
         try { diagramArrivals.setPainterColor(new Color(34, 139, 34)); } catch (Exception ex) {}
 
-        // 2. Графік черги на контроль (Червоний)
         diagramCheckQueue = new Diagram();
         diagramCheckQueue.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.GRAY), 
@@ -124,7 +123,6 @@ public class RGRStage1Frame extends JFrame {
         diagramCheckQueue.setVerticalMaxText("15");
         try { diagramCheckQueue.setPainterColor(Color.RED); } catch (Exception ex) {}
         
-        // 3. Графік черги на налаштування (Синій)
         diagramTuneQueue = new Diagram();
         diagramTuneQueue.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.GRAY), 
@@ -133,7 +131,6 @@ public class RGRStage1Frame extends JFrame {
         diagramTuneQueue.setVerticalMaxText("10");
         try { diagramTuneQueue.setPainterColor(new Color(0, 0, 139)); } catch (Exception ex) {}
 
-        // Додаємо всі 3 графіки на панель
         diagramsPanel.add(diagramArrivals);
         diagramsPanel.add(diagramCheckQueue);
         diagramsPanel.add(diagramTuneQueue);
@@ -154,7 +151,13 @@ public class RGRStage1Frame extends JFrame {
         
         tabs.addTab(" Test ", panelTest);
 
-        // --- Вкладка "Tz" (Технічне завдання) ---
+        // --- Вкладка "Stat" ---
+        statManager = new StatisticsManager();
+        // Підключаємо фабрику моделей до менеджера статистики
+        statManager.setFactory((d) -> new Model(d, this));
+        tabs.addTab(" Stat ", statManager);
+
+        // --- Вкладка "Tz" ---
         JTextArea tzArea = new JTextArea();
         tzArea.setText("ТЕХНІЧНЕ ЗАВДАННЯ\n\n" +
                 "Тема: Моделювання роботи відділу технічного контролю (TestTV)\n" +
@@ -207,7 +210,7 @@ public class RGRStage1Frame extends JFrame {
 
     private void updateDiagramsXAxis() {
         String maxTime = String.valueOf(timeSetting.getInt());
-        diagramArrivals.setHorizontalMaxText(maxTime); // Оновлюємо і новий графік
+        diagramArrivals.setHorizontalMaxText(maxTime);
         diagramCheckQueue.setHorizontalMaxText(maxTime);
         diagramTuneQueue.setHorizontalMaxText(maxTime);
     }
@@ -224,7 +227,7 @@ public class RGRStage1Frame extends JFrame {
     }
 
     private void startTest() {
-        diagramArrivals.clear(); // Очищаємо перед новим запуском
+        diagramArrivals.clear(); 
         diagramCheckQueue.clear();
         diagramTuneQueue.clear();
 
@@ -248,7 +251,7 @@ public class RGRStage1Frame extends JFrame {
     public ChooseData getTimeSetting() { return timeSetting; }
     
     public JPanel getPanelTest() { return panelTest; }
-    public Diagram getDiagramArrivals() { return diagramArrivals; } // Новий гетер
+    public Diagram getDiagramArrivals() { return diagramArrivals; }
     public Diagram getDiagramCheckQueue() { return diagramCheckQueue; }
     public Diagram getDiagramTuneQueue() { return diagramTuneQueue; }
     public JCheckBox getCbProtocolToConsole() { return cbProtocolToConsole; }
