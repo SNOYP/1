@@ -13,7 +13,8 @@ import rnd.*;
 import widgets.ChooseData;
 import widgets.ChooseRandom;
 import widgets.Diagram;
-import widgets.stat.StatisticsManager; // Імпорт менеджера статистики
+import widgets.stat.StatisticsManager;
+import widgets.experiments.ExperimentManager; // Додано для Лабораторної 6
 
 public class RGRStage1Frame extends JFrame {
     
@@ -31,8 +32,9 @@ public class RGRStage1Frame extends JFrame {
     private JCheckBox cbProtocolToConsole;
     private JButton btnStart;
     
-    // Менеджер статистики
+    // Менеджери
     private StatisticsManager statManager;
+    private ExperimentManager expManager; // Додано для Лабораторної 6
 
     public RGRStage1Frame() {
         setTitle("РГР: Дослідження роботи ВТК (TestTV) | Варіант 14");
@@ -153,9 +155,13 @@ public class RGRStage1Frame extends JFrame {
 
         // --- Вкладка "Stat" ---
         statManager = new StatisticsManager();
-        // Підключаємо фабрику моделей до менеджера статистики
         statManager.setFactory((d) -> new Model(d, this));
         tabs.addTab(" Stat ", statManager);
+
+        // --- Вкладка "Regres" (Лабораторна 6) ---
+        expManager = new ExperimentManager();
+        expManager.setFactory((d) -> new Model(d, this)); // Підключаємо фабрику
+        tabs.addTab(" Regres ", expManager);
 
         // --- Вкладка "Tz" ---
         JTextArea tzArea = new JTextArea();

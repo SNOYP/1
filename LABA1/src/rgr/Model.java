@@ -7,11 +7,12 @@ import stat.DiscretHisto;
 import stat.Histo;
 import stat.IHisto;
 import widgets.stat.IStatisticsable;
+import widgets.experiments.IExperimentable; // Додано для Лабораторної 6
 
-import java.util.LinkedHashMap; // ЗМІНЕНО: Імпортуємо LinkedHashMap
+import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class Model implements IStatisticsable {
+public class Model implements IStatisticsable, IExperimentable {
     private Dispatcher dispatcher;
     private RGRStage1Frame gui;
 
@@ -56,7 +57,9 @@ public class Model implements IStatisticsable {
             dispatcher.setProtocolFileName("");
     }
 
-    // РЕАЛІЗАЦІЯ ІНТЕРФЕЙСУ IStatisticsable
+    // ==========================================
+    // РЕАЛІЗАЦІЯ ІНТЕРФЕЙСУ IStatisticsable (Лаба 5)
+    // ==========================================
     @Override
     public void initForStatistics() {
         // Відключаємо протокол для швидкодії при зборі статистики
@@ -65,7 +68,6 @@ public class Model implements IStatisticsable {
 
     @Override
     public Map<String, IHisto> getStatistics() {
-        // ЗМІНЕНО: Використовуємо LinkedHashMap для збереження порядку 1, 2, 3, 4, 5
         Map<String, IHisto> stats = new LinkedHashMap<>();
         stats.put("1. Довжина черги на контроль", discretHistoCheckQueue);
         stats.put("2. Довжина черги на налаштування", discretHistoTuneQueue);
@@ -75,6 +77,31 @@ public class Model implements IStatisticsable {
         return stats;
     }
 
+    // ==========================================
+    // РЕАЛІЗАЦІЯ ІНТЕРФЕЙСУ IExperimentable (Лаба 6)
+    // ==========================================
+    @Override
+    public void initForExperiment(double factor) {
+        // В якості фактора беремо ймовірність браку (від 0.0 до 1.0)
+        getDeviceCheck().setProbDefect(factor);
+        
+        // Відключаємо протокол для швидкодії
+        dispatcher.setProtocolFileName("");
+    }
+
+    @Override
+    public Map<String, Double> getResultOfExperiment() {
+        Map<String, Double> results = new LinkedHashMap<>();
+        results.put("Сер. черга на контроль", discretHistoCheckQueue.getAverage());
+        results.put("Сер. черга на налаштування (Брак)", discretHistoTuneQueue.getAverage());
+        results.put("Сер. час в системі", histoServiceTime.getAverage());
+        results.put("Час простою майстра", histoWaitTune.getAverage());
+        return results;
+    }
+
+    // ==========================================
+    // ГЕТТЕРИ ТА СТВОРЕННЯ АКТОРІВ
+    // ==========================================
     public GeneratorTV getGenerator() {
         if (generator == null) {
             generator = new GeneratorTV();
@@ -95,7 +122,7 @@ public class Model implements IStatisticsable {
             deviceCheck.setRnd(gui.getRndCheck().getRandom());
             deviceCheck.setProbDefect(gui.getProbDefect().getDouble());
             deviceCheck.setFinishTime(gui.getTimeSetting().getDouble());
-            deviceCheck.setHistoForActorWaitingTime(histoWaitCheck); // Збір статистики простою
+            deviceCheck.setHistoForActorWaitingTime(histoWaitCheck); 
         }
         return deviceCheck;
     }
@@ -118,7 +145,7 @@ public class Model implements IStatisticsable {
             deviceTune.setQueueCheck(getQueueCheck());
             deviceTune.setRnd(gui.getRndTune().getRandom());
             deviceTune.setFinishTime(gui.getTimeSetting().getDouble());
-            deviceTune.setHistoForActorWaitingTime(histoWaitTune); // Збір статистики простою
+            deviceTune.setHistoForActorWaitingTime(histoWaitTune); 
         }
         return deviceTune;
     }
@@ -140,7 +167,7 @@ public class Model implements IStatisticsable {
     public TransactionTV createTransaction() {
         TransactionTV tv = new TransactionTV();
         tv.setQueueCheck(getQueueCheck());
-        tv.setHistoServiceTime(histoServiceTime); // Передаємо гістограму транзакції
+        tv.setHistoServiceTime(histoServiceTime); 
         return tv;
     }
 }
