@@ -7,12 +7,14 @@ import stat.DiscretHisto;
 import stat.Histo;
 import stat.IHisto;
 import widgets.stat.IStatisticsable;
-import widgets.experiments.IExperimentable; // Додано для Лабораторної 6
+import widgets.experiments.IExperimentable;
+import widgets.trans.ITransMonitoring; // Додано для Лабораторної 7
+import widgets.trans.ITransProcesable; // Додано для Лабораторної 7
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class Model implements IStatisticsable, IExperimentable {
+public class Model implements IStatisticsable, IExperimentable, ITransProcesable {
     private Dispatcher dispatcher;
     private RGRStage1Frame gui;
 
@@ -62,7 +64,6 @@ public class Model implements IStatisticsable, IExperimentable {
     // ==========================================
     @Override
     public void initForStatistics() {
-        // Відключаємо протокол для швидкодії при зборі статистики
         dispatcher.setProtocolFileName("");
     }
 
@@ -82,10 +83,7 @@ public class Model implements IStatisticsable, IExperimentable {
     // ==========================================
     @Override
     public void initForExperiment(double factor) {
-        // В якості фактора беремо ймовірність браку (від 0.0 до 1.0)
         getDeviceCheck().setProbDefect(factor);
-        
-        // Відключаємо протокол для швидкодії
         dispatcher.setProtocolFileName("");
     }
 
@@ -97,6 +95,28 @@ public class Model implements IStatisticsable, IExperimentable {
         results.put("Сер. час в системі", histoServiceTime.getAverage());
         results.put("Час простою майстра", histoWaitTune.getAverage());
         return results;
+    }
+
+    // ==========================================
+    // РЕАЛІЗАЦІЯ ІНТЕРФЕЙСУ ITransProcesable (Лаба 7)
+    // ==========================================
+    @Override
+    public void initForTrans(double finishTime) {
+        // Налаштування часу моделювання для дослідження перехідного процесу
+        gui.getTimeSetting().setDouble(finishTime);
+        getGenerator().setFinishTime(finishTime);
+        getDeviceCheck().setFinishTime(finishTime);
+        getDeviceTune().setFinishTime(finishTime);
+        dispatcher.setProtocolFileName(""); // Вимикаємо протокол для прискорення
+    }
+
+    @Override
+    public Map<String, ITransMonitoring> getMonitoringObjects() {
+        // Передаємо черги для моніторингу перехідних процесів
+        Map<String, ITransMonitoring> map = new LinkedHashMap<>();
+        map.put("Черга на контроль", (ITransMonitoring) getQueueCheck());
+        map.put("Черга на налаштування", (ITransMonitoring) getQueueTune());
+        return map;
     }
 
     // ==========================================

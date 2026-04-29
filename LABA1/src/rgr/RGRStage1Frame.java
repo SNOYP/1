@@ -14,7 +14,8 @@ import widgets.ChooseData;
 import widgets.ChooseRandom;
 import widgets.Diagram;
 import widgets.stat.StatisticsManager;
-import widgets.experiments.ExperimentManager; // Додано для Лабораторної 6
+import widgets.experiments.ExperimentManager;
+import widgets.trans.TransProcessManager; // Додано для Лабораторної 7
 
 public class RGRStage1Frame extends JFrame {
     
@@ -34,7 +35,8 @@ public class RGRStage1Frame extends JFrame {
     
     // Менеджери
     private StatisticsManager statManager;
-    private ExperimentManager expManager; // Додано для Лабораторної 6
+    private ExperimentManager expManager; 
+    private TransProcessManager transManager; // Додано для Лабораторної 7
 
     public RGRStage1Frame() {
         setTitle("РГР: Дослідження роботи ВТК (TestTV) | Варіант 14");
@@ -160,8 +162,13 @@ public class RGRStage1Frame extends JFrame {
 
         // --- Вкладка "Regres" (Лабораторна 6) ---
         expManager = new ExperimentManager();
-        expManager.setFactory((d) -> new Model(d, this)); // Підключаємо фабрику
+        expManager.setFactory((d) -> new Model(d, this));
         tabs.addTab(" Regres ", expManager);
+
+        // --- Вкладка "Transient" (Лабораторна 7) ---
+        transManager = new TransProcessManager();
+        transManager.setFactory((d) -> new Model(d, this)); // Підключаємо фабрику
+        tabs.addTab(" Transient ", transManager);
 
         // --- Вкладка "Tz" ---
         JTextArea tzArea = new JTextArea();
